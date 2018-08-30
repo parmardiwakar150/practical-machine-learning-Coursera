@@ -1,0 +1,110 @@
+<html>
+
+<head>Lauren 
+<title>Title</title>Practical Machine learning
+</head>prediction write up assignment
+
+<body>Assignment description
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+Assignment aim.
+
+This report aims predict the class of exercise an individual perfomed while wearing fitness trackers by using machine learning algorithms. I will partition and prescreen some of the data to afford me higher accuracy.
+
+<p>This is an R HTML document. When you click the <b>Knit HTML</b> button a web page will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:</p>
+
+<!--begin.rcode
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(rattle)
+library(knitr)
+library(randomForest)
+library(RColorBrewer)
+end.rcode-->
+
+
+
+Downloading and reading the files.
+<!--begin.rcode
+trainUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+pmltraining <- read.csv(url(trainUrl),sep = ",", na.strings = c("", "NA"))
+pmltesting <- read.csv(url(testUrl),sep = ",", na.strings = c("", "NA"))
+
+end.rcode-->
+
+Testing the files for my start point.
+<!--begin.rcode
+dim(pmltraining)
+dim(pmltesting)
+end.rcode-->
+
+Pre screening of variables with too many NA values
+
+<!--begin.rcode
+training.nonNAs <- pmltraining[ , colSums(is.na(pmltraining)) == 0]
+
+dim(training.nonNAs)
+end.rcode-->
+
+Cleaning my values
+
+<!--begin.rcode
+cleanpmlTraining<-training.nonNAs[,-c(1:8)]
+
+dim(cleanpmlTraining)
+
+cleanpmltesting<-pmltesting[,names(cleanpmlTraining[,-52])]
+
+dim(cleanpmltesting)
+end.rcode-->
+
+Partitioning the data to create a 75%  training set and a 25% test set.
+
+<!--begin.rcode
+inTrain<-createDataPartition(y=cleanpmlTraining$classe, p=0.75,list=F)
+training<-cleanpmlTraining[inTrain,] 
+test<-cleanpmlTraining[-inTrain,]
+
+dim(training)
+
+end.rcode-->
+
+Cross validation using a random forest done at 5 fold.This achieves 95% CI(0.9906,0.9954),Accuracy 99% and a kappa value of 0.992
+
+<!--begin.rcode
+Modfit1<-trainControl(method="cv", number=5, allowParallel=T, verbose=T)
+rffit<-train(classe~.,data=training, method="rf", trControl=Modfit1, verbose=F)
+
+pred.rf<-predict(rffit, newdata=test)
+confusionMatrix(pred.rf, test$classe)
+
+
+pred.20<-predict(rffit, newdata=cleanpmltesting)
+
+pred.20
+end.rcode-->
+
+using Fancy rpart plot
+
+<!--begin.rcode
+set.seed(1234)
+modFit2 <- rpart(classe ~ ., data=cleanpmlTraining, method="class")
+print(modFit2)
+fancyRpartPlot(modFit2, digits=2)
+end.rcode-->
+
+The accuracy achieved with rpart plot was less due to overplotting.The random forest method is the best fit model.
+
+<p>You can also embed plots, for example:</p>
+
+
+
+<!--begin.rcode 
+result <-predict(rffit,cleanpmltesting[ , -length(names(cleanpmltesting))])
+end.rcode-->
+
+</body>
+</html>
